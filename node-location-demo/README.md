@@ -39,6 +39,12 @@ Normalization:
 
 ## Power Apps Mapping
 
+For the detailed ChatGPT Project handoff and SharePoint column plan, read:
+
+```text
+docs/CHATGPT_PROJECT_HANDOFF_NODE_LOCATION_PHASE1.md
+```
+
 The JavaScript state maps to these collections:
 
 ```powerapps
@@ -53,6 +59,7 @@ SharePoint output targets:
 
 - `SI_Layout_Master`: Zone, Row, Shelf, grid position, active/visible/placed status.
 - `SI_Location_Master`: generated location code at Box level.
+- Recommended SharePoint helper keys: `f_layout_key`, `f_grid_key`, `f_generated_batch_id`, `f_created_by_app`.
 
 ## Demo Rules
 

@@ -145,14 +145,24 @@ test("generates locations and exports layout/location masters separately", () =>
 
   demo.placeShelf({ shelfId: shelf.id, gridIndex: 1 }, state);
   demo.setShelfBoxCount({ shelfId: shelf.id, level: 1, boxCount: 1 }, state);
-  const locations = demo.generateLocations({ zoneId: zone.id }, state);
+  const locations = demo.generateLocations(
+    { zoneId: zone.id, generatedBatchId: "batch-1" },
+    state
+  );
 
   assert.equal(locations.length, 1);
   assert.equal(locations[0].locationCode, "AB001-101");
-  assert.equal(demo.exportLayoutMaster(state).length, 1);
-  assert.equal(demo.exportLocationMaster(state).length, 1);
-  assert.ok("f_grid_row" in demo.exportLayoutMaster(state)[0]);
-  assert.ok("f_location_code" in demo.exportLocationMaster(state)[0]);
+  const layout = demo.exportLayoutMaster(state);
+  const location = demo.exportLocationMaster(state);
+  assert.equal(layout.length, 1);
+  assert.equal(location.length, 1);
+  assert.ok("f_grid_row" in layout[0]);
+  assert.equal(layout[0].f_layout_key, "A|B0|01");
+  assert.equal(layout[0].f_grid_key, "A|1");
+  assert.ok("f_location_code" in location[0]);
+  assert.equal(location[0].f_layout_key, "A|B0|01");
+  assert.equal(location[0].f_generated_batch_id, "batch-1");
+  assert.equal(location[0].f_created_by_app, "NodeLocationDemo");
 });
 
 test("summarizes generate readiness before writing output", () => {

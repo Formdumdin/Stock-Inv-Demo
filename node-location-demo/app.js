@@ -6,13 +6,21 @@
   root.NodeLocationDemo = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const GRID_SIZES = [8, 10, 12, 15];
+  const APP_SOURCE_NAME = "NodeLocationDemo";
 
-  // Power Apps mapping: this object mirrors app-level variables/collections.
-  // Use App.OnStart or Screen.OnVisible to ClearCollect colZones/colRows/colShelves
-  // and Set selected ids, active tab, and edit mode variables.
+  // Power Apps mapping:
+  // - Treat this object as the Canvas App memory layer.
+  // - App.OnStart or the main screen OnVisible should initialize the equivalent collections:
+  //   colZones, colRows, colShelves, colShelfBoxes, colGeneratedLocations.
+  // - App.OnStart or OnVisible should also Set() the equivalent variables:
+  //   varActiveTab, varLayoutEditMode, varSelectedZoneId, varSelectedRowId, varSelectedShelfId.
+  // - SharePoint is not patched directly from normal edit actions. Patch only after Generate
+  //   validation passes, so a partial or duplicate batch is never written.
   const state = createInitialState();
 
   function createInitialState() {
+    // Power Apps: mirror this in App.OnStart or Screen.OnVisible with ClearCollect()
+    // and Set(). This is local working state, not yet SharePoint data.
     return {
       activeTab: "topView",
       layoutEditMode: "shelf",
@@ -81,6 +89,18 @@
     return `${zone}${rowCode}${shelfCode}-${levelNo}${boxCode}`;
   }
 
+  function buildLayoutKey(zone, rowCode, shelfCode) {
+    // Power Apps / SharePoint: calculated key for joining SI_Layout_Master
+    // with SI_Location_Master and preventing duplicate shelf layout records.
+    return `${zone}|${rowCode}|${shelfCode}`;
+  }
+
+  function buildGridKey(zone, gridIndex) {
+    // Power Apps / SharePoint: calculated key for checking grid overlap per Zone.
+    // Blank gridIndex means the shelf is still Not Placed.
+    return gridIndex ? `${zone}|${gridIndex}` : "";
+  }
+
   function gridPositionFromIndex(gridIndex, gridSize) {
     const index = Number(gridIndex);
     const size = Number(gridSize);
@@ -105,8 +125,11 @@
   }
 
   function createZone(payload, targetState) {
-    // Power Apps: call from Create Zone button OnSelect, then Collect(colZones,...)
-    // and Navigate/Set(varActiveTab,"createRow") after validation.
+    // Power Apps: Create Zone button OnSelect.
+    // Validate zone and grid preset first, then Collect(colZones, {...}).
+    // After Collect, Set(varSelectedZoneId, NewZoneId) and Set(varActiveTab, "createRow").
+    // SharePoint note: Zone config stays local in Phase 1; it is represented in
+    // SI_Layout_Master records when shelves are exported.
     const workingState = targetState || state;
     const zoneCode = normalizeZone(payload.zoneCode);
     const gridSize = Number(payload.gridSize || 8);
@@ -130,8 +153,12 @@
   }
 
   function createRowShelves(payload, targetState) {
-    // Power Apps: call from Create Row button OnSelect. Collect one row into colRows,
-    // then ForAll(Sequence(ShelfCount), Collect(colShelves,...)).
+    // Power Apps: Create Row button OnSelect.
+    // Collect one row into colRows, then auto-create shelves with:
+    // ForAll(Sequence(ShelfCount), Collect(colShelves, {...})).
+    // This keeps user input small: user chooses Row/Shelf/Level counts,
+    // while RowCode, ShelfCode, and display names are calculated.
+    // SharePoint note: this still does not Patch. It prepares local layout data only.
     const workingState = targetState || state;
     const zone = findZone(payload.zoneId, workingState);
     const rowInput = String(payload.rowInput || "").trim().toUpperCase();
@@ -182,8 +209,11 @@
   }
 
   function placeShelf(payload, targetState) {
-    // Power Apps: single-shelf move. Use on a grid cell OnSelect after selecting a shelf:
-    // Patch(colShelves, selectedShelf, {gridIndex: ThisItem.gridIndex, ...}).
+    // Power Apps: grid cell OnSelect in Shelf Mode.
+    // Step 1: user selects one shelf from a list/gallery.
+    // Step 2: user clicks a grid cell.
+    // Step 3: validate overlap, then Patch(colShelves, selectedShelf, {...grid fields...}).
+    // This is for moving one shelf such as B2 without moving the whole row.
     const workingState = targetState || state;
     const shelf = findShelf(payload.shelfId, workingState);
     const zone = findZone(shelf.zoneId, workingState);
@@ -202,8 +232,10 @@
   }
 
   function moveRowLayout(payload, targetState) {
-    // Power Apps: row move. Use when varLayoutMode="row"; ForAll selected row shelves
-    // and Patch each shelf with calculated gridIndex/gridRow/gridCol.
+    // Power Apps: grid cell OnSelect in Row Mode.
+    // User selects a row, direction, and stack order, then clicks a start grid cell.
+    // Use ForAll(Filter(colShelves, RowId = varSelectedRowId), Patch(...)) with calculated
+    // gridIndex/gridRow/gridCol. Validate all target cells before patching any shelf.
     const workingState = targetState || state;
     const row = findRow(payload.rowId, workingState);
     const zone = findZone(row.zoneId, workingState);
@@ -287,7 +319,10 @@
   }
 
   function setShelfBoxCount(payload, targetState) {
-    // Power Apps: call from Shelf/Box screen OnSelect, patching one selected shelf+level.
+    // Power Apps: Shelf/Box Save button OnSelect.
+    // Patch or Collect one colShelfBoxes record for the selected shelf and level.
+    // Do not apply the same BoxCount to every shelf unless the user explicitly chooses a bulk action.
+    // Generate validation reads this collection to ensure every active shelf/level has Box setup.
     const workingState = targetState || state;
     const shelf = findShelf(payload.shelfId, workingState);
     const level = positiveInteger(payload.level, "Level");
@@ -348,8 +383,12 @@
   }
 
   function getShelfDetail(shelfId, targetState) {
-    // Power Apps: this is the popup/gallery data shape. In Canvas, bind a modal gallery
-    // to Filter(colShelfBoxes, ShelfId = varSelectedShelfId) plus stock lookup per box.
+    // Power Apps: Top View shelf popup data source.
+    // Popup Visible: locShowShelfPopup.
+    // Header labels: LookUp(colShelves, Id = varSelectedShelfId).
+    // Level gallery Items: Filter(colShelfBoxes, ShelfId = varSelectedShelfId).
+    // Box gallery Items: Sequence(ThisItem.BoxCount).
+    // Future stock lookup: use f_location_code to query transaction/product data.
     const workingState = targetState || state;
     const shelf = findShelf(shelfId, workingState);
     const row = findRow(shelf.rowId, workingState);
@@ -402,8 +441,11 @@
   }
 
   function validateBeforeGenerate(payload, targetState) {
-    // Power Apps: run on Generate button OnSelect before any Patch().
-    // If this returns errors, show Notify()/summary and stop.
+    // Power Apps: Generate button OnSelect, validation phase.
+    // Run this before ClearCollect(colGeneratedLocations, ...) and before any Patch().
+    // If any error exists, Notify()/show summary and stop the whole batch.
+    // This protects SharePoint from partial writes, duplicate locations, missing Box setup,
+    // unplaced active shelves, and overlapping grid positions.
     const workingState = targetState || state;
     const zone = findZone(payload.zoneId || workingState.selectedZoneId, workingState);
     const activeShelves = workingState.shelves.filter(
@@ -443,6 +485,9 @@
   }
 
   function checkExistingLocationCodes(locations, existingCodes) {
+    // Power Apps: load existing SharePoint codes before Patch, for example:
+    // ClearCollect(colExistingLocationCodes, ShowColumns(SI_Location_Master, "f_location_code")).
+    // Then compare generated codes against existing codes. Any collision blocks the whole batch.
     const existing = new Set((existingCodes || []).map((code) => String(code).toUpperCase()));
     const collisions = locations.filter((location) => existing.has(location.locationCode));
     if (collisions.length) {
@@ -452,7 +497,10 @@
   }
 
   function getGenerateSummary(payload, targetState) {
-    // Power Apps: use this shape for a pre-generate summary container.
+    // Power Apps: Generate Summary container.
+    // Bind labels/cards to counts from validation formulas before the user commits the batch.
+    // This tells the user how many Zones/Rows/Shelves/Locations will be written and whether
+    // there are duplicate/error counts that must block Patch().
     const workingState = targetState || state;
     try {
       const zone = findZone((payload && payload.zoneId) || workingState.selectedZoneId, workingState);
@@ -526,10 +574,14 @@
   }
 
   function generateLocations(payload, targetState) {
-    // Power Apps: after validation passes, ForAll active shelves/levels/boxes and
-    // Collect(colGeneratedLocations, ...) or Patch(SI_Location_Master,...).
+    // Power Apps: Generate button OnSelect, output phase.
+    // After validateBeforeGenerate passes, ClearCollect(colGeneratedLocations, ForAll(...)).
+    // Only active shelves are included. Inactive shelves remain in SI_Layout_Master but are
+    // intentionally excluded from SI_Location_Master.
+    // Do not Patch SharePoint here until duplicate checks against existing SharePoint data pass.
     const workingState = targetState || state;
     const { zone, activeShelves } = validateBeforeGenerate(payload || {}, workingState);
+    const generatedBatchId = payload && payload.generatedBatchId ? payload.generatedBatchId : "";
     const seen = new Set();
     const locations = [];
 
@@ -564,6 +616,7 @@
             boxCode,
             locationCode,
             isSelectable: true,
+            generatedBatchId,
           });
         }
       }
@@ -578,11 +631,15 @@
   }
 
   function exportLayoutMaster(targetState) {
-    // Power Apps: target shape for Patch(SI_Layout_Master,...).
+    // Power Apps: target shape for Patch(SI_Layout_Master, ...).
+    // This list stores shelf layout/grid/status only. It is not the real Box-level location list.
+    // f_layout_key should be indexed/unique when possible to prevent duplicate shelf layout records.
+    // f_grid_key should be indexed so the app can quickly detect one shelf per Zone/grid cell.
     const workingState = targetState || state;
     return workingState.shelves.map((shelf) => {
       const zone = findZone(shelf.zoneId, workingState);
       const row = findRow(shelf.rowId, workingState);
+      const layoutKey = buildLayoutKey(zone.zoneCode, shelf.rowCode, shelf.shelfCode);
       return {
         Title: `${zone.zoneCode}-${buildDisplayName(shelf.rowInput, shelf.shelfNo)}`,
         f_zone: zone.zoneCode,
@@ -599,12 +656,18 @@
         f_is_active: shelf.isActive,
         f_is_visible: shelf.isVisible !== false,
         f_is_selectable: shelf.isActive,
+        f_layout_key: layoutKey,
+        f_grid_key: buildGridKey(zone.zoneCode, shelf.gridIndex),
       };
     });
   }
 
   function exportLocationMaster(targetState) {
-    // Power Apps: target shape for Patch(SI_Location_Master,...).
+    // Power Apps: target shape for Patch(SI_Location_Master, ...).
+    // This list stores real selectable Box-level locations. The primary unique key is
+    // f_location_code, for example AB001-101.
+    // f_layout_key joins back to SI_Layout_Master without needing a SharePoint Lookup column.
+    // f_generated_batch_id and f_created_by_app are trace fields for real Patch runs.
     const workingState = targetState || state;
     return workingState.generatedLocations.map((location) => ({
       Title: location.locationCode,
@@ -618,6 +681,9 @@
       f_box: location.boxNo,
       f_box_code: location.boxCode,
       f_is_selectable: location.isSelectable,
+      f_layout_key: buildLayoutKey(location.zoneCode, location.rowCode, location.shelfCode),
+      f_generated_batch_id: location.generatedBatchId || "",
+      f_created_by_app: APP_SOURCE_NAME,
     }));
   }
 
@@ -1268,6 +1334,8 @@
     normalizeBoxCode,
     buildDisplayName,
     buildLocationCode,
+    buildLayoutKey,
+    buildGridKey,
     gridPositionFromIndex,
     gridIndexFromPosition,
     createZone,
