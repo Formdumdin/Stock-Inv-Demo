@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Node Location Demo</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SI</div>
+        <div>
+          <h1>Stock Inventory</h1>
+          <p>Power Apps Tablet Demo</p>
+        </div>
+      </div>
+      <nav class="node-nav" aria-label="Node menu">
+        <button class="nav-item">Dashboard</button>
+        <button class="nav-item is-active">Node Location</button>
+        <button class="nav-item">Product Master</button>
+        <button class="nav-item">Transaction</button>
+        <button class="nav-item">Reports</button>
+      </nav>
+      <section class="sidebar-note">
+        <span>Fixed QR format</span>
+        <strong>{Zone}{RowCode}{ShelfCode}-{Level}{BoxCode}</strong>
+        <code>AB001-101</code>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <h2>Node Location</h2>
+          <p>Layout, Shelf, Level, Box and QR location generation</p>
+        </div>
+        <label class="zone-picker">
+          <span>Selected Zone</span>
+          <select id="zoneSelect"></select>
+        </label>
+      </header>
+
+      <div class="tabs" role="tablist" aria-label="Node Location tabs">
+        <button class="tab is-active" data-tab="topView" type="button">Top View รวม</button>
+        <button class="tab" data-tab="editLayout" type="button">แก้ Layout</button>
+        <button class="tab" data-tab="createZone" type="button">สร้าง Zone</button>
+        <button class="tab" data-tab="createRow" type="button">สร้าง Row / Shelf / Level</button>
+        <button class="tab" data-tab="shelfBox" type="button">จัดการ Shelf / Box</button>
+      </div>
+
+      <div id="messages" class="messages" aria-live="polite"></div>
+
+      <section id="summary" class="summary-strip" aria-label="Summary"></section>
+
+      <div class="content-grid">
+        <section class="canvas-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Top View Grid</h3>
+              <p>2D placement only. Level and Box are generated data, not top-view cells.</p>
+            </div>
+            <div class="legend">
+              <span><i class="dot active"></i>Active</span>
+              <span><i class="dot muted"></i>Inactive</span>
+            </div>
+          </div>
+          <div id="grid" class="grid"></div>
+        </section>
+
+        <aside class="right-panel">
+          <section data-panel="topView" class="tab-panel is-active">
+            <h3>Rows</h3>
+            <div id="rowList" class="row-list"></div>
+            <h3>Shelf status</h3>
+            <div id="shelfControls" class="shelf-controls"></div>
+          </section>
+
+          <section data-panel="editLayout" class="tab-panel">
+            <h3>Place / Move Layout</h3>
+            <div class="mode-switch" role="tablist" aria-label="Layout edit mode">
+              <button class="is-active" data-layout-mode="shelf" type="button">Shelf Mode</button>
+              <button data-layout-mode="row" type="button">Row Mode</button>
+            </div>
+            <p class="hint-text">Shelf Mode: click a shelf to select it, then click an empty grid cell to move it. Row Mode: choose a row, then click a start grid cell.</p>
+            <form id="singleShelfForm" class="form-stack" data-layout-section="shelf">
+              <label>Shelf<select id="layoutShelf"></select></label>
+              <label>Target Grid Index<input id="singleShelfGrid" type="number" min="1" value="20" /></label>
+              <button class="primary" type="submit">Place Selected Shelf</button>
+            </form>
+            <div class="section-divider"></div>
+            <form id="layoutForm" class="form-stack is-hidden" data-layout-section="row">
+              <label>Row<select id="layoutRow"></select></label>
+              <label>Start Grid Index<input id="startGrid" type="number" min="1" value="1" /></label>
+              <label>Direction
+                <select id="direction">
+                  <option value="horizontal">Horizontal</option>
+                  <option value="vertical">Vertical</option>
+                </select>
+              </label>
+              <label>Stack Order
+                <select id="stackOrder">
+                  <option value="1-x">1 -> x</option>
+                  <option value="x-1">x -> 1</option>
+                </select>
+              </label>
+              <button class="primary" type="submit">Place Full Row</button>
+              <button id="clearRow" class="secondary" type="button">Clear Row Placement</button>
+            </form>
+          </section>
+
+          <section data-panel="createZone" class="tab-panel">
+            <h3>Create Zone</h3>
+            <form id="zoneForm" class="form-stack">
+              <label>Zone Code<input id="zoneCode" maxlength="1" value="B" /></label>
+              <label>Grid Size
+                <select id="zoneGridSize">
+                  <option value="8">8x8</option>
+                  <option value="10">10x10</option>
+                  <option value="12">12x12</option>
+                  <option value="15">15x15</option>
+                </select>
+              </label>
+              <button class="primary" type="submit">Create Zone</button>
+            </form>
+          </section>
+
+          <section data-panel="createRow" class="tab-panel">
+            <h3>Create Row / Shelf / Level</h3>
+            <form id="rowForm" class="form-stack">
+              <label>Row Input<input id="rowInput" maxlength="2" value="C" /></label>
+              <label>Shelf Count<input id="shelfCount" type="number" min="1" max="99" value="5" /></label>
+              <label>Level Count<input id="levelCount" type="number" min="1" max="9" value="4" /></label>
+              <button class="primary" data-next="layout" type="submit">Create and Place Layout</button>
+              <button class="secondary" data-next="stay" type="submit">Create and Add More</button>
+            </form>
+            <h3>Created Rows</h3>
+            <div id="createRowList" class="row-list"></div>
+          </section>
+
+          <section data-panel="shelfBox" class="tab-panel">
+            <h3>Shelf / Box Setup</h3>
+            <form id="boxForm" class="form-stack">
+              <label>Row<select id="boxRow"></select></label>
+              <label>Shelf<select id="boxShelf"></select></label>
+              <label>Level<select id="boxLevel"></select></label>
+              <label>Box Count<input id="boxCountInput" type="number" min="1" max="99" value="1" /></label>
+              <button class="primary" type="submit">Set Box For Selected Shelf</button>
+            </form>
+            <h3>Selected Shelf</h3>
+            <div id="boxShelfList" class="row-list"></div>
+            <button id="generateButton" class="generate" type="button">Generate Locations</button>
+            <h3>Generate Summary</h3>
+            <div id="generateSummary" class="generate-summary"></div>
+            <h3>Preview</h3>
+            <pre id="codePreview" class="code-preview"></pre>
+          </section>
+        </aside>
+      </div>
+
+      <section class="output-panel">
+        <div>
+          <h3>SI_Layout_Master Preview</h3>
+          <pre id="layoutOutput"></pre>
+        </div>
+        <div>
+          <h3>SI_Location_Master Preview</h3>
+          <pre id="locationOutput"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="shelfDetailModal" class="modal" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shelfDetailTitle">
+      <header class="modal-head">
+        <div>
+          <h3 id="shelfDetailTitle">Shelf Detail</h3>
+          <p>Level, Box, Location code, and item preview</p>
+        </div>
+        <button id="closeShelfDetail" type="button" aria-label="Close shelf detail">×</button>
+      </header>
+      <div id="shelfDetailBody" class="modal-body"></div>
+    </section>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

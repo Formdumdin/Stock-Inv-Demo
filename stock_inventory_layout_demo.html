@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Inventory Layout Demo</title>
+  <style>
+    :root {
+      --bg: #f5f3ea;
+      --panel: #ffffff;
+      --panel-soft: #f9f7ef;
+      --text: #26352b;
+      --muted: #6b7a6f;
+      --green: #88a878;
+      --green-dark: #4f6f46;
+      --brown: #9b7653;
+      --line: #d9d2c2;
+      --danger: #c95f4a;
+      --selected: #dceecd;
+      --empty: #eee9dd;
+      --shadow: 0 20px 45px rgba(60, 74, 55, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top left, #e7f1dc, transparent 35%), var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 270px 1fr 340px;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar, .rightbar { padding: 18px; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: white;
+      font-weight: 800;
+    }
+
+    h1, h2, h3 { margin: 0; }
+    h1 { font-size: 20px; }
+    h2 { font-size: 16px; margin-bottom: 12px; }
+    h3 { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+
+    .muted { color: var(--muted); font-size: 12px; }
+
+    .nav-item {
+      padding: 13px 14px;
+      border-radius: 15px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .nav-item.active {
+      background: var(--selected);
+      color: var(--green-dark);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 12px 0 6px;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fffdf8;
+      border-radius: 14px;
+      padding: 11px 12px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(136,168,120,.2);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--green-dark);
+      color: white;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .btn.secondary {
+      background: #efe8d9;
+      color: var(--green-dark);
+      border: 1px solid var(--line);
+    }
+
+    .btn.danger { background: var(--danger); }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .workspace {
+      padding: 22px;
+      flex: 1;
+      overflow: auto;
+    }
+
+    .grid-wrap {
+      width: max-content;
+      min-width: 100%;
+      padding: 20px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fffdf7, #f2ecdf);
+      border: 1px solid var(--line);
+    }
+
+    .grid {
+      display: grid;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .cell {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px dashed #cfc7b8;
+      background: var(--empty);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      color: #9a907f;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .cell:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.08);
+    }
+
+    .cell.row-cell {
+      background: linear-gradient(135deg, #cfe4be, #8fb47c);
+      border: 1px solid #739560;
+      color: #22331d;
+      font-weight: 900;
+    }
+
+    .cell.selected {
+      outline: 4px solid rgba(79,111,70,.25);
+      border-color: var(--green-dark);
+    }
+
+    .summary-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+
+    .row-list {
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    .row-item {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-bottom: 10px;
+      background: #fffdf8;
+      cursor: pointer;
+    }
+
+    .row-item.active {
+      background: var(--selected);
+      border-color: var(--green);
+    }
+
+    .front-view {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: #fffdf8;
+    }
+
+    .shelf {
+      border: 2px solid var(--brown);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .shelf-title {
+      background: #b58a62;
+      color: white;
+      padding: 8px 10px;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .level {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      border-top: 1px solid #dcc9b5;
+    }
+
+    .level-label {
+      background: #f2e7da;
+      padding: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #73563e;
+      display: grid;
+      place-items: center;
+    }
+
+    .boxes {
+      display: grid;
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .box {
+      height: 28px;
+      border-radius: 8px;
+      background: #e8f1de;
+      border: 1px solid #b8d1a6;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #4f6f46;
+    }
+
+    .code-preview {
+      font-family: Consolas, monospace;
+      white-space: pre-wrap;
+      background: #26352b;
+      color: #dceecd;
+      padding: 14px;
+      border-radius: 16px;
+      font-size: 12px;
+      max-height: 180px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel sidebar">
+      <div class="brand">
+        <div class="logo">SI</div>
+        <div>
+          <h1>Stock Inventory</h1>
+          <div class="muted">Layout Master Demo</div>
+        </div>
+      </div>
+
+      <div class="nav-item active">01 Layout Master</div>
+      <div class="nav-item">02 Location Master</div>
+      <div class="nav-item">03 Stock In</div>
+      <div class="nav-item">04 Stock Out</div>
+      <div class="nav-item">05 Stock Card</div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0;" />
+
+      <h2>Grid Setup</h2>
+      <label>Zone</label>
+      <input id="zoneInput" value="ZONE-A" />
+
+      <label>Grid Columns</label>
+      <input id="colsInput" type="number" value="12" min="4" max="30" />
+
+      <label>Grid Rows</label>
+      <input id="rowsInput" type="number" value="8" min="4" max="30" />
+
+      <button class="btn" onclick="applyGridSize()">Apply Grid Size</button>
+      <button class="btn secondary" onclick="clearLayout()">Clear Layout</button>
+    </aside>
+
+    <main class="panel main">
+      <div class="topbar">
+        <div>
+          <h1>Top View Designer</h1>
+          <div class="muted">คลิกช่อง Grid เพื่อวาง/ลบ Row ตำแหน่งวางชั้นในมุมมองด้านบน</div>
+        </div>
+        <div class="toolbar">
+          <div class="chip">Mode: Row Placement</div>
+          <div class="chip" id="countChip">0 Locations</div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="grid-wrap">
+          <div id="grid" class="grid"></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel rightbar">
+      <h2>Selected Row Config</h2>
+      <div class="summary-card">
+        <div class="muted">Selected</div>
+        <h1 id="selectedText">ยังไม่ได้เลือก Row</h1>
+      </div>
+
+      <label>Row Name</label>
+      <input id="rowNameInput" placeholder="เช่น R01" />
+
+      <label>Shelf Count</label>
+      <input id="shelfInput" type="number" value="3" min="1" max="20" />
+
+      <label>Level Count ต่อ Shelf</label>
+      <input id="levelInput" type="number" value="4" min="1" max="20" />
+
+      <label>Box Count ต่อ Level</label>
+      <input id="boxInput" type="number" value="5" min="1" max="30" />
+
+      <button class="btn" onclick="saveSelectedConfig()">Save Row Config</button>
+      <button class="btn danger" onclick="deleteSelectedRow()">Delete Selected Row</button>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0;" />
+
+      <h2>Rows</h2>
+      <div id="rowList" class="row-list"></div>
+
+      <h2 style="margin-top:16px;">Front View Preview</h2>
+      <div id="frontView" class="front-view muted">เลือก Row เพื่อดู Shelf / Level / Box</div>
+
+      <h2 style="margin-top:16px;">Generated Location Codes</h2>
+      <div id="codePreview" class="code-preview">[]</div>
+    </aside>
+  </div>
+
+  <script>
+    let gridRows = 8;
+    let gridCols = 12;
+    let selectedKey = null;
+    let layout = {};
+
+    const gridEl = document.getElementById('grid');
+
+    function keyOf(r, c) {
+      return `${r}-${c}`;
+    }
+
+    function renderGrid() {
+      gridEl.innerHTML = '';
+      gridEl.style.gridTemplateColumns = `repeat(${gridCols}, 48px)`;
+
+      for (let r = 1; r <= gridRows; r++) {
+        for (let c = 1; c <= gridCols; c++) {
+          const key = keyOf(r, c);
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.key = key;
+          cell.textContent = `${r},${c}`;
+
+          if (layout[key]) {
+            cell.classList.add('row-cell');
+            cell.textContent = layout[key].rowName;
+          }
+
+          if (selectedKey === key) {
+            cell.classList.add('selected');
+          }
+
+          cell.onclick = () => toggleCell(key, r, c);
+          gridEl.appendChild(cell);
+        }
+      }
+
+      renderRowList();
+      renderPreview();
+      renderCodes();
+    }
+
+    function toggleCell(key, r, c) {
+      if (!layout[key]) {
+        const nextNo = Object.keys(layout).length + 1;
+        layout[key] = {
+          key,
+          row: r,
+          col: c,
+          rowName: `R${String(nextNo).padStart(2, '0')}`,
+          shelfCount: 3,
+          levelCount: 4,
+          boxCount: 5
+        };
+      }
+
+      selectedKey = key;
+      loadSelectedToForm();
+      renderGrid();
+    }
+
+    function loadSelectedToForm() {
+      const item = layout[selectedKey];
+      if (!item) return;
+      document.getElementById('selectedText').textContent = item.rowName;
+      document.getElementById('rowNameInput').value = item.rowName;
+      document.getElementById('shelfInput').value = item.shelfCount;
+      document.getElementById('levelInput').value = item.levelCount;
+      document.getElementById('boxInput').value = item.boxCount;
+    }
+
+    function saveSelectedConfig() {
+      if (!selectedKey || !layout[selectedKey]) return alert('กรุณาเลือก Row ก่อน');
+
+      layout[selectedKey].rowName = document.getElementById('rowNameInput').value || layout[selectedKey].rowName;
+      layout[selectedKey].shelfCount = Number(document.getElementById('shelfInput').value || 1);
+      layout[selectedKey].levelCount = Number(document.getElementById('levelInput').value || 1);
+      layout[selectedKey].boxCount = Number(document.getElementById('boxInput').value || 1);
+
+      renderGrid();
+    }
+
+    function deleteSelectedRow() {
+      if (!selectedKey) return;
+      delete layout[selectedKey];
+      selectedKey = null;
+      document.getElementById('selectedText').textContent = 'ยังไม่ได้เลือก Row';
+      renderGrid();
+    }
+
+    function applyGridSize() {
+      gridCols = Number(document.getElementById('colsInput').value || 12);
+      gridRows = Number(document.getElementById('rowsInput').value || 8);
+
+      Object.keys(layout).forEach(key => {
+        const item = layout[key];
+        if (item.row > gridRows || item.col > gridCols) delete layout[key];
+      });
+
+      selectedKey = null;
+      renderGrid();
+    }
+
+    function clearLayout() {
+      if (!confirm('ล้าง Layout ทั้งหมด?')) return;
+      layout = {};
+      selectedKey = null;
+      renderGrid();
+    }
+
+    function renderRowList() {
+      const rowList = document.getElementById('rowList');
+      const rows = Object.values(layout).sort((a,b) => a.row - b.row || a.col - b.col);
+      rowList.innerHTML = '';
+      document.getElementById('countChip').textContent = `${generateLocationCodes().length} Locations`;
+
+      if (rows.length === 0) {
+        rowList.innerHTML = '<div class="muted">ยังไม่มี Row</div>';
+        return;
+      }
+
+      rows.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'row-item' + (item.key === selectedKey ? ' active' : '');
+        div.innerHTML = `
+          <strong>${item.rowName}</strong>
+          <div class="muted">Grid: ${item.row},${item.col} / Shelf ${item.shelfCount} / Level ${item.levelCount} / Box ${item.boxCount}</div>
+        `;
+        div.onclick = () => {
+          selectedKey = item.key;
+          loadSelectedToForm();
+          renderGrid();
+        };
+        rowList.appendChild(div);
+      });
+    }
+
+    function renderPreview() {
+      const front = document.getElementById('frontView');
+      const item = layout[selectedKey];
+      if (!item) {
+        front.innerHTML = 'เลือก Row เพื่อดู Shelf / Level / Box';
+        front.classList.add('muted');
+        return;
+      }
+      front.classList.remove('muted');
+      let html = '';
+      for (let s = 1; s <= item.shelfCount; s++) {
+        html += `<div class="shelf"><div class="shelf-title">${item.rowName}-S${String(s).padStart(2,'0')}</div>`;
+        for (let l = item.levelCount; l >= 1; l--) {
+          html += `<div class="level"><div class="level-label">L${l}</div><div class="boxes" style="grid-template-columns: repeat(${item.boxCount}, 1fr);">`;
+          for (let b = 1; b <= item.boxCount; b++) {
+            html += `<div class="box">B${b}</div>`;
+          }
+          html += `</div></div>`;
+        }
+        html += `</div>`;
+      }
+      front.innerHTML = html;
+    }
+
+    function generateLocationCodes() {
+      const zone = document.getElementById('zoneInput').value || 'ZONE-A';
+      const codes = [];
+      Object.values(layout).forEach(item => {
+        for (let s = 1; s <= item.shelfCount; s++) {
+          for (let l = 1; l <= item.levelCount; l++) {
+            for (let b = 1; b <= item.boxCount; b++) {
+              codes.push(`${zone}-${item.rowName}-S${String(s).padStart(2,'0')}-L${String(l).padStart(2,'0')}-B${String(b).padStart(2,'0')}`);
+            }
+          }
+        }
+      });
+      return codes;
+    }
+
+    function renderCodes() {
+      const codes = generateLocationCodes();
+      document.getElementById('codePreview').textContent = JSON.stringify(codes.slice(0, 80), null, 2) + (codes.length > 80 ? `\n... and ${codes.length - 80} more` : '');
+    }
+
+    document.getElementById('zoneInput').addEventListener('input', renderCodes);
+    renderGrid();
+  </script>
+</body>
+</html>
