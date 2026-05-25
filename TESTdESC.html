@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Location Popup Master Detail Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #eef3ed;
+      color: #1f2d27;
+    }
+
+    .app {
+      width: 1366px;
+      height: 768px;
+      padding: 24px;
+      background: linear-gradient(135deg, #f6faf4, #e5eee2);
+      overflow: hidden;
+    }
+
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .title h1 { margin: 0; font-size: 28px; }
+    .title p { margin: 4px 0 0; color: #64736a; }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      background: #2f6f4e;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 18px;
+      height: 630px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 10px 26px rgba(31,45,39,.12);
+      padding: 18px;
+    }
+
+    .grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .warehouse-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+    }
+
+    .cell {
+      height: 56px;
+      border: 1px dashed #cdd6cb;
+      border-radius: 10px;
+      background: #f7faf6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cell.shelf {
+      background: #cfe6d0;
+      border: 1px solid #93bd96;
+    }
+
+    .side h3 { margin: 0 0 12px; }
+    .row-item {
+      padding: 12px;
+      border-radius: 12px;
+      background: #f7faf6;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .row-item.active { background: #dcefdc; outline: 2px solid #93bd96; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup {
+      width: 1120px;
+      height: 690px;
+      background: white;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 22px 60px rgba(0,0,0,.25);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .popup-head {
+      height: 96px;
+      padding: 18px 24px;
+      border-bottom: 1px solid #dfe8dc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .popup-head h2 { margin: 0; }
+    .popup-head p { margin: 6px 0 0; color: #64736a; }
+
+    .close {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid #cdd6cb;
+      background: white;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      padding: 16px 24px;
+      background: #fbfdf9;
+    }
+
+    .summary-card {
+      background: white;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 5px 14px rgba(31,45,39,.08);
+    }
+
+    .summary-card .label { color: #64736a; font-size: 13px; }
+    .summary-card .value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+
+    .filters {
+      padding: 12px 24px;
+      display: grid;
+      grid-template-columns: 160px 160px 1fr;
+      gap: 12px;
+      border-top: 1px solid #edf2eb;
+      border-bottom: 1px solid #edf2eb;
+    }
+
+    select, input {
+      border: 1px solid #cdd6cb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .master-detail {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 52% 48%;
+      min-height: 0;
+    }
+
+    .locations-panel, .items-panel {
+      padding: 18px 24px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .locations-panel { border-right: 1px solid #edf2eb; }
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .list {
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .location-card {
+      border: 1px solid #e2ebe0;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #f9fcf7;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .location-card.active {
+      background: #dcefdc;
+      border-color: #7daf82;
+    }
+
+    .location-code { font-weight: 800; font-size: 16px; }
+    .meta { color: #64736a; font-size: 13px; margin-top: 4px; }
+    .badge {
+      align-self: start;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #e7f2e5;
+      color: #2f6f4e;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .item-card {
+      border: 1px solid #e2ebe0;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: white;
+    }
+
+    .item-code { font-weight: 800; }
+    .item-name { margin-top: 4px; color: #38483f; }
+    .item-qty { margin-top: 8px; color: #2f6f4e; font-weight: 800; }
+
+    .empty {
+      height: 100%;
+      border: 2px dashed #d7e2d5;
+      border-radius: 18px;
+      color: #7b8a80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      background: #fbfdf9;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="title">
+        <h1>Top View Grid</h1>
+        <p>Zone A · 8x8 · Runtime Viewer</p>
+      </div>
+      <button class="btn" onclick="openPopup('AB001')">Open Shelf AB001</button>
+    </div>
+
+    <div class="dashboard">
+      <div class="card">
+        <div class="grid-header">
+          <h3>Warehouse Top View</h3>
+          <span>🟢 Active · ⚪ Inactive</span>
+        </div>
+        <div class="warehouse-grid" id="grid"></div>
+      </div>
+
+      <div class="card side">
+        <h3>Rows / Shelf Status</h3>
+        <div class="row-item active"><span>Row B</span><strong>5 shelves</strong></div>
+        <div class="row-item"><span>Row C</span><strong>3 shelves</strong></div>
+        <div class="row-item"><span>Row D</span><strong>4 shelves</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="popupOverlay" style="display:none;">
+    <div class="popup">
+      <div class="popup-head">
+        <div>
+          <h2 id="popupTitle">Shelf Detail</h2>
+          <p>Level, Box, Location Code, and Item Preview</p>
+        </div>
+        <button class="close" onclick="closePopup()">X</button>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card"><div class="label">Shelf</div><div class="value" id="summaryShelf">AB001</div></div>
+        <div class="summary-card"><div class="label">Status</div><div class="value">Active</div></div>
+        <div class="summary-card"><div class="label">Grid Position</div><div class="value">1</div></div>
+        <div class="summary-card"><div class="label">Locations</div><div class="value" id="summaryCount">0</div></div>
+      </div>
+
+      <div class="filters">
+        <select id="filterLevel" onchange="renderLocations()">
+          <option value="">All Levels</option>
+        </select>
+        <select id="filterBox" onchange="renderLocations()">
+          <option value="">All Boxes</option>
+        </select>
+        <input id="searchText" oninput="renderLocations()" placeholder="Search location code or item..." />
+      </div>
+
+      <div class="master-detail">
+        <div class="locations-panel">
+          <div class="panel-title">
+            <h3>Locations</h3>
+            <span id="locationCount">0 records</span>
+          </div>
+          <div class="list" id="locationList"></div>
+        </div>
+
+        <div class="items-panel">
+          <div class="panel-title">
+            <h3>Items in selected Box</h3>
+            <span id="itemCount">0 items</span>
+          </div>
+          <div class="list" id="itemList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const shelves = {
+      1: 'AB001', 2: 'AB002', 3: 'AB003', 4: 'AB004', 5: 'AB005'
+    };
+
+    const locations = [
+      { code:'AB001-101', level:1, box:'01' },
+      { code:'AB001-102', level:1, box:'02' },
+      { code:'AB001-103', level:1, box:'03' },
+      { code:'AB001-201', level:2, box:'01' },
+      { code:'AB001-202', level:2, box:'02' },
+      { code:'AB001-203', level:2, box:'03' },
+      { code:'AB001-301', level:3, box:'01' },
+      { code:'AB001-302', level:3, box:'02' },
+      { code:'AB001-401', level:4, box:'01' }
+    ];
+
+    const items = [
+      { location:'AB001-101', itemCode:'SKU-001', itemName:'Motor Bearing 6204', qty:12 },
+      { location:'AB001-101', itemCode:'SKU-002', itemName:'Seal Ring 25mm', qty:40 },
+      { location:'AB001-102', itemCode:'SKU-007', itemName:'Sensor Cable Long Description Example', qty:8 },
+      { location:'AB001-203', itemCode:'SKU-020', itemName:'Control Relay', qty:5 },
+      { location:'AB001-203', itemCode:'SKU-021', itemName:'Connector Terminal', qty:120 },
+      { location:'AB001-401', itemCode:'SKU-999', itemName:'Spare Part Box Set', qty:1 }
+    ];
+
+    let selectedLocation = null;
+
+    function initGrid() {
+      const grid = document.getElementById('grid');
+      for (let i = 1; i <= 64; i++) {
+        const div = document.createElement('div');
+        div.className = shelves[i] ? 'cell shelf' : 'cell';
+        div.textContent = shelves[i] || i;
+        if (shelves[i]) div.onclick = () => openPopup(shelves[i]);
+        grid.appendChild(div);
+      }
+    }
+
+    function openPopup(shelf) {
+      document.getElementById('popupOverlay').style.display = 'flex';
+      document.getElementById('popupTitle').textContent = `Shelf Detail · ${shelf}`;
+      document.getElementById('summaryShelf').textContent = shelf;
+      document.getElementById('summaryCount').textContent = locations.length;
+      buildFilters();
+      selectedLocation = locations[0]?.code;
+      renderLocations();
+      renderItems();
+    }
+
+    function closePopup() {
+      document.getElementById('popupOverlay').style.display = 'none';
+    }
+
+    function buildFilters() {
+      const levelSelect = document.getElementById('filterLevel');
+      const boxSelect = document.getElementById('filterBox');
+      levelSelect.innerHTML = '<option value="">All Levels</option>';
+      boxSelect.innerHTML = '<option value="">All Boxes</option>';
+
+      [...new Set(locations.map(x => x.level))].forEach(level => {
+        levelSelect.innerHTML += `<option value="${level}">Level ${level}</option>`;
+      });
+
+      [...new Set(locations.map(x => x.box))].forEach(box => {
+        boxSelect.innerHTML += `<option value="${box}">Box ${box}</option>`;
+      });
+    }
+
+    function getFilteredLocations() {
+      const level = document.getElementById('filterLevel').value;
+      const box = document.getElementById('filterBox').value;
+      const search = document.getElementById('searchText').value.toLowerCase();
+
+      return locations.filter(loc => {
+        const itemMatch = items.some(item =>
+          item.location === loc.code &&
+          (`${item.itemCode} ${item.itemName}`).toLowerCase().includes(search)
+        );
+        return (!level || String(loc.level) === level) &&
+          (!box || loc.box === box) &&
+          (!search || loc.code.toLowerCase().includes(search) || itemMatch);
+      });
+    }
+
+    function renderLocations() {
+      const list = document.getElementById('locationList');
+      const data = getFilteredLocations();
+      document.getElementById('locationCount').textContent = `${data.length} records`;
+      list.innerHTML = '';
+
+      data.forEach(loc => {
+        const itemQty = items.filter(i => i.location === loc.code).length;
+        const div = document.createElement('div');
+        div.className = 'location-card' + (selectedLocation === loc.code ? ' active' : '');
+        div.onclick = () => {
+          selectedLocation = loc.code;
+          renderLocations();
+          renderItems();
+        };
+        div.innerHTML = `
+          <div>
+            <div class="location-code">${loc.code}</div>
+            <div class="meta">Level ${loc.level} / Box ${loc.box}</div>
+          </div>
+          <div class="badge">${itemQty > 0 ? itemQty + ' items' : 'Empty'}</div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderItems() {
+      const list = document.getElementById('itemList');
+      const data = items.filter(i => i.location === selectedLocation);
+      document.getElementById('itemCount').textContent = `${data.length} items`;
+      list.innerHTML = '';
+
+      if (data.length === 0) {
+        list.innerHTML = '<div class="empty">ไม่มีสินค้าใน Box นี้<br/>เลือก Location อื่น หรือรอ Stock In</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+          <div class="item-code">${item.itemCode}</div>
+          <div class="item-name">${item.itemName}</div>
+          <div class="item-qty">Qty: ${item.qty}</div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    initGrid();
+  </script>
+</body>
+</html>
