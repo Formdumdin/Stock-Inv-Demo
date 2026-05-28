@@ -1,0 +1,157 @@
+(function (root, factory) {
+  const data = factory();
+  if (typeof module === "object" && module.exports) {
+    module.exports = data;
+  }
+  root.StockTransactionMockDb = data;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  const itemMaster = [
+    {
+      class: "8J",
+      type: "9",
+      item_code: "001-0041-05-0",
+      item_name: "CASE 962(MOLD 2)           INJ",
+      mat_code: "98900-30110-000",
+      mat_name: "PBT DURANEX 7407 ED3002 BK DOM",
+      usage_kg: 0.001721,
+    },
+    {
+      class: "JK",
+      type: "7",
+      item_code: "00960-3096--079",
+      item_name: "00960 SLEEVE (NATURAL)     INJ",
+      mat_code: "98900-02700-000",
+      mat_name: "POM IUPITAL F30-03 (NAT)   DOM",
+      usage_kg: 0.002905,
+    },
+    {
+      class: "JK",
+      type: "7",
+      item_code: "00963-6217--079",
+      item_name: "00963 LOWER BEARING(NATURAL)INJ",
+      mat_code: "98900-02700-000",
+      mat_name: "POM IUPITAL F30-03 (NAT)   DOM",
+      usage_kg: 0.00143,
+    },
+  ];
+
+  const locationMaster = [
+    {
+      f_location_code: "AD001-101",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "01",
+      f_level: 1,
+      f_box: "01",
+      f_location_name: "AD001-101",
+      f_is_active: true,
+      f_row_input: "D",
+      f_row_code: "D0",
+      f_shelf_no: 1,
+      f_shelf_code: "01",
+      f_box_code: "01",
+      f_layout_key: "9cde0b43-4ee4-4d9c-b99f-5a06b4a02f97|D0|01",
+    },
+    {
+      f_location_code: "AD001-102",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "01",
+      f_level: 1,
+      f_box: "02",
+      f_location_name: "AD001-102",
+      f_is_active: true,
+      f_row_input: "D",
+      f_row_code: "D0",
+      f_shelf_no: 1,
+      f_shelf_code: "01",
+      f_box_code: "02",
+      f_layout_key: "9cde0b43-4ee4-4d9c-b99f-5a06b4a02f97|D0|01",
+    },
+    {
+      f_location_code: "AD004-201",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "04",
+      f_level: 2,
+      f_box: "01",
+      f_location_name: "AD004-201",
+      f_is_active: true,
+      f_row_input: "D",
+      f_row_code: "D0",
+      f_shelf_no: 4,
+      f_shelf_code: "04",
+      f_box_code: "01",
+      f_layout_key: "9cde0b43-4ee4-4d9c-b99f-5a06b4a02f97|D0|04",
+    },
+    {
+      f_location_code: "AD005-301",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "05",
+      f_level: 3,
+      f_box: "01",
+      f_location_name: "AD005-301",
+      f_is_active: true,
+      f_row_input: "D",
+      f_row_code: "D0",
+      f_shelf_no: 5,
+      f_shelf_code: "05",
+      f_box_code: "01",
+      f_layout_key: "9cde0b43-4ee4-4d9c-b99f-5a06b4a02f97|D0|05",
+    },
+  ];
+
+  const itemLocationMappings = [
+    {
+      f_item_location_key: "001-0041-05-0|AD001-101",
+      f_item_code: "001-0041-05-0",
+      f_item_name: "CASE 962(MOLD 2)           INJ",
+      f_location_code: "AD001-101",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "01",
+      f_level: 1,
+      f_box: "01",
+      f_open_balance: 1.5,
+      f_receipt_qty: 0,
+      f_issue_qty: 0,
+      f_adjust_in_qty: 0,
+      f_adjust_out_qty: 0,
+      f_on_hand_qty: 1.5,
+      f_max_capacity: "",
+      f_last_transaction_no: "",
+      f_last_transaction_date: "",
+    },
+    {
+      f_item_location_key: "00960-3096--079|AD001-102",
+      f_item_code: "00960-3096--079",
+      f_item_name: "00960 SLEEVE (NATURAL)     INJ",
+      f_location_code: "AD001-102",
+      f_zone: "A",
+      f_row: "D0",
+      f_shelf: "01",
+      f_level: 1,
+      f_box: "02",
+      f_open_balance: 0.75,
+      f_receipt_qty: 0,
+      f_issue_qty: 0,
+      f_adjust_in_qty: 0,
+      f_adjust_out_qty: 0,
+      f_on_hand_qty: 0.75,
+      f_max_capacity: "",
+      f_last_transaction_no: "",
+      f_last_transaction_date: "",
+    },
+  ];
+
+  const transactions = [];
+
+  return {
+    itemMaster,
+    locationMaster,
+    itemLocationMappings,
+    transactions,
+    sourceWorkbook: "All Soruce/DB_Stock_Inv.xlsx",
+  };
+});

@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-const demo = require("../node-location-demo/app.js");
+const demo = require("../node-location-demo/applocation.js");
 
 test("builds fixed QR/location codes from normalized parts", () => {
   assert.equal(
@@ -319,7 +319,7 @@ test("returns shelf detail with levels, boxes, locations, and item names", () =>
 
 test("attaches the demo API to the browser global", () => {
   const source = fs.readFileSync(
-    path.join(__dirname, "../node-location-demo/app.js"),
+    path.join(__dirname, "../node-location-demo/applocation.js"),
     "utf8"
   );
   const context = {

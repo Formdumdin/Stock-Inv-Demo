@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Node Location Demo</title>
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./stylelocation.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -17,11 +17,11 @@
         </div>
       </div>
       <nav class="node-nav" aria-label="Node menu">
-        <button class="nav-item">Dashboard</button>
-        <button class="nav-item is-active">Node Location</button>
-        <button class="nav-item">Product Master</button>
-        <button class="nav-item">Transaction</button>
-        <button class="nav-item">Reports</button>
+        <a class="nav-item" href="#" aria-disabled="true">Dashboard</a>
+        <a class="nav-item is-active" href="./">Node Location</a>
+        <a class="nav-item" href="#" aria-disabled="true">Product Master</a>
+        <a class="nav-item" href="../node-transaction-demo/">Transaction</a>
+        <a class="nav-item" href="#" aria-disabled="true">Reports</a>
       </nav>
       <section class="sidebar-note">
         <span>Fixed QR format</span>
@@ -185,6 +185,6 @@
     </section>
   </div>
 
-  <script src="./app.js"></script>
+  <script src="./applocation.js"></script>
 </body>
 </html>
